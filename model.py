@@ -40,15 +40,40 @@ class Movie(db.Model):
     released_at = db.Column(db.Date, nullable=True)
     imdb_url = db.Column(db.String, nullable=True)
 
+    def __repr__(self):
+        """provide helpful representation when printed"""
+
+        return f"<Movie title={self.title} \
+                        movie_id={self.movie_id}, \
+                        released_at={self.released_at}>"
+
 class Rating(db.Model): 
     """Movie ratings  by user"""
 
     __tablename__ = "ratings"
 
     rating_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    movie_id = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movies.movie_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     score = db.Column(db.Integer, nullable=False)
+
+    # adds an attribute that is the same as if queried user directly after
+    # joining two tables
+    user = db.relationship("User", backref=db.backref("ratings",
+                                                      order_by=rating_id))
+
+    movie = db.relationship("Movie", backref=db.backref("ratings",
+                                                        order_by=rating_id))
+
+
+
+    def __repr__(self):
+        """provide helpful representation when printed"""
+
+        return f"<Rating rating_id={self.rating_id}, \
+                         movie_id={self.movie_id}, \
+                         user_id={self.user_id}, \
+                         score={self.score}>"
 
 
 

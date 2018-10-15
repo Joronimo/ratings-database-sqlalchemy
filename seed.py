@@ -117,4 +117,4 @@ if __name__ == "__main__":
     load_users()
     load_movies()
     load_ratings()
-    set_val_user_id()
+    # set_val_user_id()
