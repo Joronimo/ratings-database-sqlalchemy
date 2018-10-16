@@ -7,6 +7,12 @@
   Ratings
   <hr>
 
+  <div class="flashes">
+  {% for message in get_flashed_messages() %}
+    {{ message }}
+  {% endfor %}
+  </div>
+  
   {% block content %}{% endblock %}
 
 </body>
