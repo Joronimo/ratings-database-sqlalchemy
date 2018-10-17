@@ -29,11 +29,11 @@ def index():
     return render_template("homepage.html")
 
 @app.route("/users")
-def user_list():
-    """Show list of users"""
+def lists_all_users():
+    """Show list of all users"""
 
     users = User.query.all()
-    return render_template("user_list.html", users=users)
+    return render_template("list_all_users.html", users=users)
 
 @app.route("/registration")
 def registration():
@@ -79,15 +79,38 @@ def processed_login():
     for tup in emails:
         if email in tup:
             user_id = db.session.query(User.user_id).filter(User.email == email).all()
-            # print("USER ID: ", user_id)
+            user_id = user_id[0][0]
             session["user_id"] = user_id
             message = Markup("Logged In")
             flash(message)
-            return redirect("/")
+            return redirect(f"/users/{user_id}")
 
     message = Markup("This email is not registered. Please register here.")
     flash(message)
     return render_template("registration.html")    
+
+@app.route("/users/<int:user_id>")
+def show_user_info(user_id):
+    """from URL with user ID, get all user information and display user page"""
+
+    users = User.query.all()
+
+    for user in users:
+        if user.user_id == user_id:
+
+            # user_ratings = Rating.query.filter(Rating.user_id == user.user_id).all()
+
+            movie_and_rating_id = (
+            db.session.query(Rating.score, Movie.title)
+            .join(Movie).filter(Rating.user_id == user.user_id).all())
+
+            return render_template("user_info.html",
+                                   user=user,
+                                   movies_and_ratings=movie_and_rating_id)
+
+
+
+
 
 if __name__ == "__main__":
     # We have to set debug=True here, since it has to be True at the
