@@ -8,7 +8,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 
 from model import connect_to_db, db, User, Rating, Movie
 
-from seed import *
+# from seed import *
 
 
 app = Flask(__name__)
@@ -25,6 +25,14 @@ app.jinja_env.undefined = StrictUndefined
 @app.route('/')
 def index():
     """Homepage."""
+
+    logout = request.args.get("loggedOut")
+
+    if logout:
+        session.clear()
+        message = Markup("You have been successfully logged out.")
+        flash(message)
+
 
     return render_template("homepage.html")
 
@@ -48,18 +56,22 @@ def processed_registration():
     password = request.form.get("password")
 
     email_users = db.session.query(User.email)
-    emails = email_users.filter(User.email == email)
+    emails = email_users.filter(User.email == email).all()
 
-    # print("LOOK FOR THIS!!!!", emails)
+    print("LOOK FOR THIS!!!!", emails)
 
-    for tup in emails:
-        if email not in tup:
-            user = User(email=email, password=password)
-            db.session.add(user)
-            db.session.commit()
-            return render_template("homepage.html")
-        else:
-            return render_template("login.html")
+    if emails == []:
+        user = User(email=email, password=password)
+        db.session.add(user)
+        db.session.commit()
+        session["user_id"] = user.user_id
+        message = Markup("You are now registered!")
+        flash(message)
+        return render_template("homepage.html")
+    else:
+        message = Markup("You already have an account. Please log in.")
+        flash(message)
+        return render_template("login.html")
 
 
 @app.route("/login")
@@ -87,7 +99,8 @@ def processed_login():
 
     message = Markup("This email is not registered. Please register here.")
     flash(message)
-    return render_template("registration.html")    
+    return render_template("registration.html")
+
 
 @app.route("/users/<int:user_id>")
 def show_user_info(user_id):
@@ -107,6 +120,74 @@ def show_user_info(user_id):
             return render_template("user_info.html",
                                    user=user,
                                    movies_and_ratings=movie_and_rating_id)
+
+
+@app.route("/movies")
+def show_all_movies():
+
+    movies = Movie.query.order_by(Movie.title).all()
+
+    return render_template("list_all_movies.html", movies=movies)
+
+@app.route("/movies/<int:movie_id>")
+def show_movie_info(movie_id):
+    """from URL with movie ID, get all movie information and display movie page"""
+
+    movie = Movie.query.filter_by(movie_id=movie_id).first()
+
+    list_of_ratings = Rating.query.filter_by(movie_id=movie_id)
+
+    users = []
+    scores = []
+
+    for rating in list_of_ratings:
+        users.append(rating.user.user_id)
+        scores.append(rating.score)
+
+    users_and_scores = zip(users, scores)
+
+    return render_template("movie_info.html", movie=movie,
+                           users_and_scores=users_and_scores)
+
+@app.route("/add-rating", methods=["POST"])
+def add_a_rating():
+    """Add a rating to a movie."""
+
+    if not session["user_id"]:
+        return redirect("/login")
+    else:
+        movie_id = request.form.get("movie_id")
+        rating = request.form.get("score")
+        user_id = session["user_id"]
+
+        user_movie_rating = Rating.query.filter_by(movie_id=movie_id, user_id=user_id).first()
+
+        if user_movie_rating:
+            message = Markup("You have already rated this movie. \
+                This has updated your previous rating.")
+            flash(message)
+
+            user_movie_rating.score = rating
+
+            db.session.add(user_movie_rating)
+
+            db.session.commit()
+
+            return redirect("/movies")
+
+        else:
+            new_rating = Rating(user_id=user_id, movie_id=movie_id, score=rating)
+
+            db.session.add(new_rating)
+
+            db.session.commit()
+            message = Markup("Your rating has been successfully added!")
+            flash(message)
+            return redirect("/movies")
+       
+
+
+
 
 
 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<h1>Movie: {{ movie.title }}</h1>
+
+<form action="/add-rating", method="POST">
+	Your Score:
+	<select name="score">
+		<option value="1">1</option>
+		<option value="2">2</option>
+		<option value="3">3</option>
+		<option value="4">4</option>
+		<option value="5">5</option>
+	</select>
+	<input type="hidden" name="movie_id" value={{ movie.movie_id }}>
+	<input type="submit">
+</form>
+
+
+<table style="width:50%">
+	<tr>
+		<th>User ID</th>
+		<th>Score (5 as highest)</th>
+	</tr>
+	<br>
+	{% for user, score in users_and_scores %}
+	<tr>
+		<td>{{ user }}</td>
+		<td>{{ score }}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+
+{% endblock %}
