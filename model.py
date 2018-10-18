@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 # the Flask-SQLAlchemy helper library. On this, we can find the `session`
 # object, where we do most of our interactions (like committing, etc.)
 
+import correlation as c
+
 db = SQLAlchemy()
 
 
@@ -76,10 +78,56 @@ class Rating(db.Model):
                          score={self.score}>"
 
 
+def judgmental_eye():
+    # m = Movie.query.filter_by(title="Toy Story").first()
+    u = User.query.get(956)  # person logged in
+
+    ratings = u.ratings  # person logged in's ratings
+
+    other_ratings = Rating.query.filter_by(movie_id=1).all()
+    other_users = [r.user for r in other_ratings]  
+    # list of users who have rated Toy Story
+
+    # all the movies u has rated
+    u_movie_ids = [user_rating.movie_id for user_rating in u.ratings]
+
+    o = other_users[0]  # the first other user who has rated Toy Story
+
+    # need a dictionary containing keys as: movie ids U/we have rated. values
+    # are our rating objects of those movies.
+    
+    u_movies = {}
+    for rating in ratings:
+        u_movies[rating.movie_id] = rating.score
+
+    # want a list of pairs where [(our score of a movie, their score of a movie)]
+
+    pairs_list = []
+
+    
+    o_movies = db.session.query(Rating.movie_id).filter(Rating.user_id == o.user_id).all()
+    o_scores = db.session.query(Rating.score).filter(Rating.user_id == o.user_id).all()
+    print("USER MOVIES", o_movies)
+    # Movie.query.filter_by(user_id=user.user_id).all()
+
+    # db.session.query(Rating.score, Movie.title)
+    #     .join(Movie).filter(Rating.user_id == user.user_id).all())
+
+    # list of all movies that user has rated.
+    for score in o_scores:    
+        for movie in o_movies:
+            if u_movies.get(movie[0]):
+                pairs_list.append((u_movies.get(movie[0]), score[0]))
+
+    
+
+
+
+
 
 
 ##############################################################################
-# Helper functions
+# Helper functions-
 
 def connect_to_db(app):
     """Connect the database to our Flask app."""
